@@ -1,0 +1,43 @@
+<canvas id="canvas"></canvas>
+<script>
+  fetch("raytracer.wasm")
+    .then(response => response.arrayBuffer())
+    .then(bytes => WebAssembly.instantiate(bytes, {}))
+    .then(result => {
+      const { instance } = result;
+      const { render, get_frame_buffer_ptr, get_width, get_height, memory } = instance.exports;
+      const width = get_width();
+      const height = get_height();
+      const canvas = document.getElementById("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx.createImageData(width, height);
+
+      function frame(time) {
+        // Call the Rust render function (time in ms)
+        render(time);
+        const bufferPtr = get_frame_buffer_ptr();
+        // Create a view into the WASM memory for the frame buffer.
+        const pixels = new Uint8ClampedArray(memory.buffer, bufferPtr, width * height * 4);
+        imageData.data.set(pixels);
+        ctx.putImageData(imageData, 0, 0);
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    });
+  console.log("NTT(flag) = ", {
+    output: [
+      27, 148, 127, 203, 82, 223, 87, 223, 186, 152, 53,
+      135, 194, 195, 187, 134, 233, 103, 57, 171, 33, 67,
+      24, 136, 80, 195, 90, 129, 177, 196, 237, 139, 119,
+      54, 24, 48, 120, 132, 116, 19, 242, 255, 174, 61,
+      59, 229, 142, 170, 161, 245, 112, 32, 183, 204, 228,
+      99, 181, 214, 236, 203, 89, 158, 88, 214
+    ],
+    p: 257,
+    n: 64,
+    omega: 81
+  });
+</script>
